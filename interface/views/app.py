@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import plotly.graph_objects as go
 import pandas as pd
 import random
@@ -36,32 +37,58 @@ def change_page(page_name):
     st.session_state.current_page = page_name
 
 # Sidebar
-with st.sidebar:
-    st.title("IPEA")
+
+html_code = """
+<div style="width: 250px; position: fixed; top: 0; left: 0; height: 100%; background-color: #f7f7f7; padding-top: 20px; border-right: 2px solid #ddd;">
+
+    <h2 style="text-align: center; color: #333;">Gov Insights</h2>
     
-    st.text_input("🔍 Search for...")
-    st.markdown("### Navegação")
+    <input type="text" placeholder="🔍 Search for..." style="width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box;">
+
+    <h3 style="color: #333;">Navegação</h3>
+
+    <!-- Buttons for navigation -->
+    <button onclick="window.location.href='/dashboard'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        Dashboard
+    </button>
+    <button onclick="window.location.href='/relatorios'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        Exportar Relatórios
+    </button>
+    <button onclick="window.location.href='/alertas'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        Alertas
+    </button>
+
+    <div style="margin: 20px 0; border-top: 1px solid #ccc;"></div>
+
+    <button onclick="window.location.href='/configuracoes'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
+        Configurações
+    </button>
+
+</div>
+"""
+components.html(html_code, height=800)
+# with st.sidebar:
+#     st.title("Gov Insights")
     
-    # Botões de navegação
+#     st.text_input("🔍 Search for...")
+#     st.markdown("### Navegação")
     
-    if st.button("Dashboard"):
-        change_page("Dashboard")
-    if st.button("Relatórios"):
-        change_page("Relatórios")
-    if st.button("Alertas"):
-        change_page("Alertas")
-    if st.button("Análises inteligentes"):
-        change_page("Análises inteligentes")
-    if st.button("Dados"):
-        change_page("Dados")
+#     # Botões de navegação
     
-    st.markdown("---")
-    if st.button("User"):
-        change_page("User")
-    if st.button("Configurações"):
-        change_page("Configurações")
-    if st.button("Logout"):
-        st.logout()
+#     if st.button("Dashboard"):
+#         change_page("Dashboard")
+#     if st.button("Exportar Relatórios"):
+#         change_page("Relatórios")
+#     if st.button("Alertas"):
+#         change_page("Alertas")
+
+    
+#     st.markdown("---")
+
+
+#     if st.button("Configurações"):
+#         change_page("Configurações")
+
 
 # Funções simuladas
 def get_total_receitas(): return 50800, 28.4
