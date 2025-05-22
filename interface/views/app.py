@@ -1,205 +1,119 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import plotly.graph_objects as go
 import pandas as pd
-import random
-# import pathlib
-
+from datetime import date
 import sys
-sys.path.insert(0, '../teste/services')
-from search import filtro
+import ipeadatapy as ipea
 
-# from alertas import alertas_page
-# from configuracoes import configuracoes_page
-# from relatorios import relatorios_page
-# from analises import analises_page
-# from dados import dados_page
-# from user import user_page
-
+# sys.path.insert(0, '../teste/services')
+# from search import filtro  # Deve retornar um DataFrame com colunas: Meses, Receitas, Despesas
 
 # Configuração da página
-st.set_page_config(
-    page_title="GovInsights",
-    layout="wide",
-    page_icon="📊"
-)
+st.set_page_config(page_title="GovInsights", layout="wide", page_icon="📊")
 
-# Estilo CSS
-with open("./interface/views/styles/style.css", encoding="utf-8") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-# Estado da sessão para controlar a página atual
-if 'current_page' not in st.session_state:
+# ==========================
+# ESTADOS DE SESSÃO
+# ==========================
+if "current_page" not in st.session_state:
     st.session_state.current_page = "Dashboard"
 
-# Função para mudar de página
+if "show_filters" not in st.session_state:
+    st.session_state.show_filters = True
+
+# ==========================
+# FUNÇÕES AUXILIARES
+# ==========================
+
+def filtro(phrase: str):
+    # Retorna um dataframe contendo as series com dados financeiros do IPEA de acordo com a string parametrizada referente ao órgão procurado.
+
+    # Caso a busca não seja bem sucedida sera retornado uma string "Não Encontrado".
+
+    series = ipea.metadata()
+    series = series[series["MEASURE"].str.contains("\\$")]
+    series = pd.concat([series[series["SOURCE ACRONYM"].str.lower().str.contains(phrase.lower())],
+                        series[series["SOURCE"].str.lower().str.contains(phrase.lower())]])
+    series = series.sort_values(by='CODE').drop_duplicates()
+    return "Não Encontrado" if series.empty else series
+
+def toggle_filter_panel():
+    st.session_state.show_filters = not st.session_state.show_filters
+
 def change_page(page_name):
     st.session_state.current_page = page_name
 
-# Sidebar
-
-html_code = """
-<div style="width: 250px; position: fixed; top: 0; left: 0; height: 100%; background-color: #f7f7f7; padding-top: 20px; border-right: 2px solid #ddd;">
-
-    <h2 style="text-align: center; color: #333;">Gov Insights</h2>
+def render_dashboard():
+    st.markdown("<h3 style='color:white;'>Gov Insights - Relatórios inteligentes IPEA</h3>", unsafe_allow_html=True)
     
-    <input type="text" placeholder="🔍 Search for..." style="width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box;">
+    # Obtém os dados filtrados da função filtro()
+    df = filtro("IBGE")
 
-    <h3 style="color: #333;">Navegação</h3>
-
-    <!-- Buttons for navigation -->
-    <button onclick="window.location.href='/dashboard'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
-        Dashboard
-    </button>
-    <button onclick="window.location.href='/relatorios'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
-        Exportar Relatórios
-    </button>
-    <button onclick="window.location.href='/alertas'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
-        Alertas
-    </button>
-
-    <div style="margin: 20px 0; border-top: 1px solid #ccc;"></div>
-
-    <button onclick="window.location.href='/configuracoes'"; style="display: block; width: 100%; padding: 12px; margin: 8px 0; text-align: center; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px;">
-        Configurações
-    </button>
-
-</div>
-"""
-components.html(html_code, height=800)
-# with st.sidebar:
-#     st.title("Gov Insights")
-    
-#     st.text_input("🔍 Search for...")
-#     st.markdown("### Navegação")
-    
-#     # Botões de navegação
-    
-#     if st.button("Dashboard"):
-#         change_page("Dashboard")
-#     if st.button("Exportar Relatórios"):
-#         change_page("Relatórios")
-#     if st.button("Alertas"):
-#         change_page("Alertas")
-
-    
-#     st.markdown("---")
-
-
-#     if st.button("Configurações"):
-#         change_page("Configurações")
-
-
-# Funções simuladas
-def get_total_receitas(): return 50800, 28.4
-def get_total_despesas(): return 23600, -12.6
-def get_alertas_ativos(): return 3, 3.1
-def get_series_temporais():
-    meses = pd.date_range("2023-01-01", periods=12, freq="M")
-    receitas = [random.randint(80, 240) for _ in range(12)]
-    despesas = [random.randint(60, 180) for _ in range(12)]
-    return pd.DataFrame({"Meses": meses, "Receitas": receitas, "Despesas": despesas})
-def get_valor_indicador(): return 23648
-def get_gauge_value(): return 65
-
-# Página principal
-def main_page():
-    # Cabeçalho
-    st.markdown("""
-    <div class="header-ipea">
-        <h3 class="titulo-ipea">Relatórios inteligentes IPEA</h3>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Métricas principais
-    col1, col2, col3 = st.columns(3)
-    receitas, receitas_var = get_total_receitas()
-    despesas, despesas_var = get_total_despesas()
-    alertas, alertas_var = get_alertas_ativos()
-
-    # Card 1
-    with col1:
-        st.markdown(f"""
-        <div class="card-metrica">
-            <div class="card-topo"><span class="icon">👤</span><span class="titulo">Total de receitas</span></div>
-            <div class="valor">{receitas:,}K</div>
-            <div class="variacao {'positivo' if receitas_var >= 0 else 'negativo'}">{'▲' if receitas_var >= 0 else '▼'} {abs(receitas_var):.1f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Card 2
-    with col2:
-        st.markdown(f"""
-        <div class="card-metrica">
-            <div class="card-topo"><span class="icon">👁️</span><span class="titulo">Total de Despesas</span></div>
-            <div class="valor">{despesas:,}K</div>
-            <div class="variacao {'positivo' if despesas_var >= 0 else 'negativo'}">{'▲' if despesas_var >= 0 else '▼'} {abs(despesas_var):.1f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Card 3
-    with col3:
-        st.markdown(f"""
-        <div class="card-metrica">
-            <div class="card-topo"><span class="icon">➕</span><span class="titulo">Alertas Ativos</span></div>
-            <div class="valor">{alertas}</div>
-            <div class="variacao {'positivo' if alertas_var >= 0 else 'negativo'}">{'▲' if alertas_var >= 0 else '▼'} {abs(alertas_var):.1f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("## ")
-
-    # Gráfico e Indicadores
-    col4, col5 = st.columns([3, 2])
-    df = get_series_temporais()
+    if df is None or df.empty:
+        st.warning("Nenhum dado disponível para os filtros aplicados.")
+        return
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df["Meses"], y=df["Receitas"], name="Receitas", line=dict(color="#A020F0")))
-    fig.add_trace(go.Scatter(x=df["Meses"], y=df["Despesas"], name="Despesas", line=dict(color="#00CFFF")))
-    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
-    col4.plotly_chart(fig, use_container_width=True)
+    fig.add_trace(go.Scatter(x=df["Meses"], y=df["Receitas"], name="Receitas", line=dict(color="#27ae60")))
+    fig.add_trace(go.Scatter(x=df["Meses"], y=df["Despesas"], name="Despesas", line=dict(color="#c0392b")))
+    fig.update_layout(
+        margin=dict(l=20, r=20, t=20, b=20),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white"),
+        height=450
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-    with col5:
-        st.markdown(f"""
-        <div class='painel'>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque urna mi, varius nec tincidunt sed.</p>
-        <h2 class='valor-indicador'>{get_valor_indicador():,}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+# ==========================
+# INTERFACE PRINCIPAL
+# ==========================
 
-        gauge_value = get_gauge_value()
-        gauge_fig = go.Figure(go.Indicator(
-            mode="gauge+number", value=gauge_value, title={'text': ""},
-            gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#555555"},
-                   'steps': [{'range': [0, 50], 'color': "#e0e0e0"}, {'range': [50, 100], 'color': "#b0b0b0"}],
-                   'threshold': {'line': {'color': "white", 'width': 4}, 'thickness': 0.75, 'value': gauge_value}}
-        ))
-        gauge_fig.update_layout(margin=dict(l=20, r=20, t=30, b=20), height=250, width=250, paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#333333"))
-        st.plotly_chart(gauge_fig, use_container_width=True)
+# Três colunas: Menu | Dashboard | Filtros
+col_menu, col_dash, col_filtros = st.columns([1, 5, 2], gap="large")
 
+# 1️⃣ MENU LATERAL ESQUERDO
+with col_menu:
+    st.markdown("### ")
+    st.button("🏠 Dashboard", on_click=change_page, args=("Dashboard",))
+    st.button("📄 Relatórios", on_click=change_page, args=("Relatórios",))
+    st.button("🚨 Alertas", on_click=change_page, args=("Alertas",))
+    st.markdown("---")
+    st.button("⚙️ Configurações", on_click=change_page, args=("Configurações",))
 
+# 2️⃣ CONTEÚDO CENTRAL (DASHBOARD)
+with col_dash:
+    if st.session_state.current_page == "Dashboard":
+        render_dashboard()
+    else:
+        st.info(f"Você está na página: {st.session_state.current_page}")
 
-# Outras páginas 
+# 3️⃣ PAINEL DE FILTROS À DIREITA
+if st.session_state.show_filters:
+    with col_filtros:
+        st.markdown("## Filtros")
 
+        orgao = st.selectbox("Órgão Responsável", ["Banco Central", "IBGE", "IPEA"], key="orgao")
+        tema = st.selectbox("Tema da Série", ["Inflação", "Câmbio", "Juros"], key="tema")
+        codigo = st.selectbox("Código da Série", ["IPCA-15", "USD-BRL", "Selic"], key="codigo")
 
-# Renderização condicional da página
+        st.markdown("### Período de Análise")
+        data_inicio = st.date_input("Data Inicial", value=date(2023, 1, 1), key="data_inicio")
+        data_fim = st.date_input("Data Final", value=date(2024, 12, 31), key="data_fim")
 
-# if st.user.is_logged_in:
-#     if st.session_state.current_page == "Dashboard":
-#         main_page()
-        
-#     elif st.session_state.current_page == "Relatórios":
-#         relatorios_page()
-#     elif st.session_state.current_page == "Alertas":
-#         alertas_page()
-#     elif st.session_state.current_page == "Análises inteligentes":
-#         analises_page()
-#     elif st.session_state.current_page == "Dados":
-#         dados_page()
-#     elif st.session_state.current_page == "User":
-#         user_page()
-#     elif st.session_state.current_page == "Configurações":
-#         configuracoes_page()
+        unidade = st.selectbox("Unidade de medida", ["BRL", "USD", "%"], key="unidade")
 
-# else:
-#     st.title("Logue para usar aplicação.")
+        if st.button("Buscar"):
+            # Armazenando filtros
+            st.session_state.filtro_orgao = orgao
+            st.session_state.filtro_tema = tema
+            st.session_state.filtro_codigo = codigo
+            st.session_state.filtro_data_inicio = data_inicio
+            st.session_state.filtro_data_fim = data_fim
+            st.session_state.filtro_unidade = unidade
+
+            toggle_filter_panel()
+            st.experimental_rerun()
+else:
+    with col_filtros:
+        if st.button("Mostrar Filtros"):
+            toggle_filter_panel()
