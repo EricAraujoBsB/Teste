@@ -1,7 +1,66 @@
 import ipeadatapy as ipea
 import pandas as pd
 
-    
+def sidebar(phrase:str):
+    global aux
+    if phrase == "Órgão":
+        aux = ipea.sources()
+        aux = aux[aux["SIGLA"]]
+        return aux
+    elif phrase == "Tema":
+        aux = ipea.themes()
+        aux = aux[aux["NAME"]]
+        return aux
+    elif phrase == "Código":
+        aux = ipea.list_series()
+        aux = aux[aux["CODE"]]
+        return aux
+
+def organization(phrase: str):
+    """
+    Retorna um dataframe contendo as series com dados financeiros do IPEA de acordo com a string parametrizada referente ao órgão procurado.
+
+    Caso a busca não seja bem sucedida sera retornado uma string "Não Encontrado".
+    """
+    series = ipea.metadata()
+    series = series[series["MEASURE"].str.contains("\\$")]
+    series = pd.concat([series[series["SOURCE ACRONYM"].str.lower().str.contains(phrase.lower())],
+                        series[series["SOURCE"].str.lower().str.contains(phrase.lower())]])
+    series = series.sort_values(by='CODE').drop_duplicates()
+    return "Não Encontrado" if series.empty else series
+
+
+def theme(phrase: str):
+    """
+    Retorna um dataframe contendo as series com dados financeiros do IPEA de acordo com a string parametrizada referente ao tema procurado.
+
+    Caso a busca não seja bem sucedida sera retornado uma string "Não Encontrado".
+    """
+    getThemeID = ipea.themes()
+    getThemeID = getThemeID[getThemeID['NAME'].str.lower().str.contains(phrase.lower())]
+    found = pd.DataFrame()
+    if not getThemeID.empty:
+        for id in getThemeID['ID']:
+            find = ipea.metadata(theme_id=id)
+            find = find[find['MEASURE'].str.contains("\\$")]
+            found = pd.concat([found, find])
+        found = found.sort_values(by='CODE')
+    return "Não Encontrado" if found.empty else found
+
+
+def code(phrase: str):
+    """
+    Retorna um dataframe contendo as series com dados financeiros do IPEA de acordo com a string parametrizada referente ao código procurado.
+
+    Caso a busca não seja bem sucedida sera retornado uma string "Não Encontrado".
+    """
+    code = ipea.metadata()
+    code = code[code["MEASURE"].str.contains("\\$")]
+    code = code[code["CODE"].str.contains(phrase.upper())]
+    code = code.sort_values(by='CODE')
+    return "Não Encontrado" if code.empty else code
+
+
 def filtro(organizacao_usuario: str, tema_usuario: str, codigo_usuario: str, data_inicio_usuario: str, data_fim_usuario: str, pais_usuario: str, frequencia_usuario: str, unidade_usuario: str, subtema_usuario: str) -> pd.DataFrame:
     """
     Filtra os metadados do IPEA com base nos critérios fornecidos pelo usuário e prepara os dados para visualização.
